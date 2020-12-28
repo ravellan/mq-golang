@@ -173,6 +173,41 @@ func (p *PCFParameter) Bytes() []byte {
 		endian.PutUint32(buf[offset:], uint32(len(p.String[0])))
 		offset += 4
 		copy(buf[offset:], []byte(p.String[0]))
+
+	case C.MQCFT_STRING_LIST:
+		// Find the length of the longest string in the list
+		longestStr := 0
+		for _, s := range p.String {
+			if len(s) > longestStr {
+				longestStr = len(s)
+			}
+		}
+
+		// The length must be a multiple of four,
+		// and must be sufficient to contain all the strings
+		strCount := len(p.String)
+		buf = make([]byte, C.MQCFSL_STRUC_LENGTH_FIXED+
+			roundTo4(int32(longestStr*strCount)))
+
+		offset := 0
+		endian.PutUint32(buf[offset:], uint32(p.Type))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(len(buf)))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(p.Parameter))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(C.MQCCSI_DEFAULT))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(strCount))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(longestStr))
+		offset += 4
+
+		// copy each string with the same offset equal to the longest string
+		for _, s := range p.String {
+			copy(buf[offset:], []byte(s))
+			offset += longestStr
+		}
 	default:
 		fmt.Printf("mqiPCF.go: Trying to serialise PCF parameter. Unknown PCF type %d\n", p.Type)
 	}

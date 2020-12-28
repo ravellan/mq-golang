@@ -228,6 +228,21 @@ func TestReadPCFParameter(t *testing.T) {
 	back, _ = ReadPCFParameter(start.Bytes())
 	verifyParam(t, &start, back)
 
+	t.Run("MQCFT_STRING_LIST", func(t *testing.T) {
+		start := PCFParameter{
+			Parameter: MQCACF_GROUP_ENTITY_NAMES,
+			String:    []string{"short", "longer", "thelongest"},
+			Type:      MQCFT_STRING_LIST,
+		}
+		b := start.Bytes()
+
+		if len(b)%4 != 0 {
+			t.Error("Length of serialized string list is not multiple of 4")
+		}
+		back, _ := ReadPCFParameter(b)
+		verifyParam(t, &start, back)
+	})
+
 	// The rest of the types are not implemented in the Bytes()
 	// function so cannot be tested.
 }

@@ -243,6 +243,26 @@ func TestReadPCFParameter(t *testing.T) {
 		verifyParam(t, &start, back)
 	})
 
+	t.Run("MQCFT_BYTE_STRING", func(t *testing.T) {
+		given := PCFParameter{
+			Parameter: MQBACF_CONNECTION_ID,
+			String:    []string{"abcdef1234"},
+			Type:      MQCFT_BYTE_STRING,
+		}
+		b := given.Bytes()
+
+		if len(b) == 0 {
+			t.Fatal("Returned buffer from Bytes() is zero length")
+		}
+		if len(b)%4 != 0 {
+			t.Error("Length of serialized byte string is not multiple of 4")
+		}
+		returned, _ := ReadPCFParameter(b)
+		if given.String[0] != returned.String[0] {
+			t.Errorf("Returned parameter 'String' did not match. Expected: %s, Got: %s", given.String[0], returned.String[0])
+		}
+	})
+
 	// The rest of the types are not implemented in the Bytes()
 	// function so cannot be tested.
 }

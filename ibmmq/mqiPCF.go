@@ -208,6 +208,29 @@ func (p *PCFParameter) Bytes() []byte {
 			copy(buf[offset:], []byte(s))
 			offset += longestStr
 		}
+
+	case C.MQCFT_BYTE_STRING:
+		byteString, err := hex.DecodeString(p.String[0])
+		if err != nil {
+			// should not happen but to be safe
+			fmt.Printf("mqiPCF.go: MQCFT_BYTE_STRING: decode hex string: %s\n", err)
+			break
+		}
+
+		// The length must be a multiple of four
+		lenTo4 := roundTo4(int32(len(byteString)))
+		buf = make([]byte, C.MQCFBS_STRUC_LENGTH_FIXED+lenTo4)
+
+		offset := 0
+		endian.PutUint32(buf[offset:], uint32(p.Type))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(len(buf)))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(p.Parameter))
+		offset += 4
+		endian.PutUint32(buf[offset:], uint32(len(byteString)))
+		offset += 4
+		copy(buf[offset:], byteString)
 	default:
 		fmt.Printf("mqiPCF.go: Trying to serialise PCF parameter. Unknown PCF type %d\n", p.Type)
 	}
